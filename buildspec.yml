@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR
+      - aws --version
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 632116114782.dkr.ecr.us-east-1.amazonaws.com
+
+  build:
+    commands:
+      - echo Build Docker Image
+      - docker build -t ecs-demo .
+      - docker tag ecs-demo:latest $ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/sample-ecs-app:latest
+
+  post_build:
+    commands:
+      - echo Pushing image
+      - docker tag sample-ecs-repo:latest 632116114782.dkr.ecr.us-east-1.amazonaws.com/sample-ecs-repo:latest
+      - docker push 632116114782.dkr.ecr.us-east-1.amazonaws.com/sample-ecs-repo:latest
+      - printf '[{"name":"ecs-demo-container","imageUri":"%s"}]' $ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/sample-ecs-app:latest > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
